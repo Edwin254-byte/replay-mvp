@@ -7,63 +7,112 @@ generator client {
   provider = "prisma-client-js"
 }
 
+enum UserRole {
+  MANAGER
+  APPLICANT
+}
+
+enum ApplicationStatus {
+  PENDING
+  SHORTLISTED
+  REJECTED
+}
+
+enum QuestionType {
+  TEXT
+  MULTIPLE_CHOICE
+}
+
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
+  id        String     @id @default(cuid())
+  email     String     @unique
   password  String
-  role      String   @default("manager")
-  createdAt DateTime @default(now())
+  name      String
+  role      UserRole   @default(APPLICANT)
+  positions Position[]
+  createdAt DateTime   @default(now())
 }
 
 model Position {
-  id           String     @id @default(cuid())
-  title        String
-  description  String?
-  introText    String?
-  farewellText String?
-  publicId     String     @unique
-  createdBy    String
-  createdAt    DateTime   @default(now())
-  questions    Question[]
-  applications Application[]
+  id              String           @id @default(cuid())
+  title           String
+  description     String
+  userId          String
+  user            User             @relation(fields: [userId], references: [id])
+  questions       Question[]
+  applications    Application[]
+  jobApplications JobApplication[]
+  hiringQuestions HiringQuestion[]
+  createdAt       DateTime         @default(now())
 }
 
 model Question {
-  id              String   @id @default(cuid())
-  positionId      String
-  order           Int
-  title           String
-  prompt          String
-  voiceType       String   // "ai" | "video" | "text"
-  aiVideoUrl      String?
-  uploadedMeta    String?  // JSON metadata for manager-uploaded interviewer video (filename, mimetype)
-  position        Position @relation(fields: [positionId], references: [id])
-  Answer          Answer[]
+  id           String   @id @default(cuid())
+  positionId   String
+  order        Int
+  title        String
+  prompt       String
+  voiceType    String // "ai" | "video" | "text"
+  aiVideoUrl   String?
+  uploadedMeta String? // JSON metadata for manager-uploaded interviewer video (filename, mimetype)
+  position     Position @relation(fields: [positionId], references: [id])
+  Answer       Answer[]
 }
 
 model Application {
-  id           String    @id @default(cuid())
-  positionId   String
-  name         String
-  email        String
-  startedAt    DateTime  @default(now())
-  completedAt  DateTime?
-  status       String    @default("in_progress") // in_progress | completed
+  id            String    @id @default(cuid())
+  positionId    String
+  name          String
+  email         String
+  startedAt     DateTime  @default(now())
+  completedAt   DateTime?
+  status        String    @default("in_progress") // in_progress | completed
   overallResult String?
-  answers      Answer[]
-  position     Position  @relation(fields: [positionId], references: [id])
+  answers       Answer[]
+  position      Position  @relation(fields: [positionId], references: [id])
 }
 
 model Answer {
-  id               String      @id @default(cuid())
-  applicationId    String
-  questionId       String
-  recordedMeta     String      // JSON metadata describing the recorded file for simulation: { filename, mimetype, size, duration}
-  recordedUrl      String?     // optional URL placeholder (we won't persist real file for simulate-only)
-  startedAt        DateTime? 
-  endedAt          DateTime?
-  result           String?
-  application      Application @relation(fields: [applicationId], references: [id])
-  question         Question    @relation(fields: [questionId], references: [id])
+  id            String      @id @default(cuid())
+  applicationId String
+  questionId    String
+  recordedMeta  String // JSON metadata describing the recorded file for simulation: { filename, mimetype, size, duration}
+  recordedUrl   String? // optional URL placeholder (we won't persist real file for simulate-only)
+  startedAt     DateTime?
+  endedAt       DateTime?
+  result        String?
+  application   Application @relation(fields: [applicationId], references: [id])
+  question      Question    @relation(fields: [questionId], references: [id])
+}
+
+model JobApplication {
+  id            String            @id @default(cuid())
+  name          String
+  email         String
+  resumeUrl     String?
+  status        ApplicationStatus @default(PENDING)
+  position      Position          @relation(fields: [positionId], references: [id])
+  positionId    String
+  createdAt     DateTime          @default(now())
+  hiringAnswers HiringAnswer[] // Answers to hiring questions
+}
+
+model HiringQuestion {
+  id         String         @id @default(cuid())
+  text       String
+  type       QuestionType   @default(TEXT)
+  position   Position       @relation(fields: [positionId], references: [id])
+  positionId String
+  createdAt  DateTime       @default(now())
+  answers    HiringAnswer[]
+}
+
+model HiringAnswer {
+  id            String         @id @default(cuid())
+  response      String
+  application   JobApplication @relation(fields: [applicationId], references: [id])
+  applicationId String
+  question      HiringQuestion @relation(fields: [questionId], references: [id])
+  questionId    String
+  createdAt     DateTime       @default(now())
 }

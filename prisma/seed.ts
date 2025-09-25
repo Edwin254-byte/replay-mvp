@@ -1,3 +1,4 @@
+import { UserRole } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { hash } from "bcryptjs";
 
@@ -19,7 +20,7 @@ async function main() {
     const user = await prisma.user.upsert({
       where: { email },
       update: {},
-      create: { email, password: hashed, role: "manager", name: "Admin" },
+      create: { email, password: hashed, role: UserRole.MANAGER, name: "Admin" },
     });
 
     console.log(`Seeded admin user: ${email} (ID: ${user.id})`);

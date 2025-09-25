@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, use, useCallback } from "react";
 
 interface Question {
   id: string;
@@ -17,11 +17,7 @@ export default function InterviewPage({ params }: { params: Promise<{ publicId: 
   const [recordedFiles, setRecordedFiles] = useState<{ [key: string]: File }>({});
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchQuestions();
-  }, []);
-
-  const fetchQuestions = async () => {
+  const fetchQuestions = useCallback(async () => {
     try {
       const response = await fetch(`/api/applications/${appId}/questions`);
       if (response.ok) {
@@ -29,11 +25,15 @@ export default function InterviewPage({ params }: { params: Promise<{ publicId: 
         setQuestions(data.questions);
       }
     } catch (error) {
-      console.error("Error fetching questions:", error);
+      console.error("Failed to fetch questions:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [appId, setQuestions, setLoading]);
+
+  useEffect(() => {
+    fetchQuestions();
+  }, [fetchQuestions]);
 
   const handleFileUpload = async (file: File, questionId: string) => {
     const formData = new FormData();

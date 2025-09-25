@@ -1,12 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { nanoid } from "nanoid";
+import { getToken } from "next-auth/jwt";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // Check authentication
+    const token = await getToken({ req: request });
+    if (!token || token.role !== "MANAGER") {
+      return NextResponse.json({ error: "Unauthorized. Manager access required." }, { status: 401 });
+    }
+
     const positions = await prisma.position.findMany({
+      where: { userId: token.sub },
       orderBy: { createdAt: "desc" },
-      include: { questions: true, applications: true },
+      include: {
+        questions: true,
+        applications: true,
+        jobApplications: true,
+        hiringQuestions: true,
+        _count: {
+          select: {
+            jobApplications: true,
+            hiringQuestions: true,
+          },
+        },
+      },
     });
     return NextResponse.json({ positions });
   } catch (error) {
@@ -16,21 +34,33 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { title, description, introText, farewellText } = await request.json();
+    // Check authentication
+    const token = await getToken({ req: request });
+    if (!token || token.role !== "MANAGER") {
+      return NextResponse.json({ error: "Unauthorized. Manager access required." }, { status: 401 });
+    }
+
+    if (!token.sub) {
+      return NextResponse.json({ error: "Invalid user session" }, { status: 401 });
+    }
+
+    const { title, description } = await request.json();
+
+    if (!title || !title.trim()) {
+      return NextResponse.json({ error: "Title is required" }, { status: 400 });
+    }
 
     const position = await prisma.position.create({
       data: {
-        title,
-        description,
-        introText,
-        farewellText,
-        publicId: nanoid(10),
-        createdBy: "admin", // TODO: get from session
+        title: title.trim(),
+        description: description?.trim() || "",
+        userId: token.sub as string,
       },
     });
 
     return NextResponse.json({ position });
   } catch (error) {
+    console.error("Error creating position:", error);
     return NextResponse.json({ error: "Failed to create position" }, { status: 500 });
   }
 }

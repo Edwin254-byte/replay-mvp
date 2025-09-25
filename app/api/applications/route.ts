@@ -3,11 +3,11 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
   try {
-    const { publicId, name, email } = await request.json();
+    const { positionId, name, email } = await request.json();
 
-    // Find position by publicId
+    // Find position by id
     const position = await prisma.position.findUnique({
-      where: { publicId },
+      where: { id: positionId },
     });
 
     if (!position) {

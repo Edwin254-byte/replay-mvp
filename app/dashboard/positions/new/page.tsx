@@ -5,8 +5,6 @@ import { useRouter } from "next/navigation";
 export default function NewPositionPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [introText, setIntroText] = useState("");
-  const [farewellText, setFarewellText] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -18,11 +16,14 @@ export default function NewPositionPage() {
       const response = await fetch("/api/positions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, description, introText, farewellText }),
+        body: JSON.stringify({ title, description }),
       });
 
       if (response.ok) {
         router.push("/dashboard/positions");
+      } else {
+        const errorData = await response.json();
+        console.error("Error creating position:", errorData.error);
       }
     } catch (error) {
       console.error("Error creating position:", error);
@@ -52,35 +53,16 @@ export default function NewPositionPage() {
           <textarea
             value={description}
             onChange={e => setDescription(e.target.value)}
-            className="w-full border rounded p-2 h-24"
-            rows={3}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1">Intro Text (shown to applicants)</label>
-          <textarea
-            value={introText}
-            onChange={e => setIntroText(e.target.value)}
-            className="w-full border rounded p-2 h-24"
-            rows={3}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1">Farewell Text (shown after completion)</label>
-          <textarea
-            value={farewellText}
-            onChange={e => setFarewellText(e.target.value)}
-            className="w-full border rounded p-2 h-24"
-            rows={3}
+            className="w-full border rounded p-2 h-32"
+            rows={4}
+            placeholder="Describe the position requirements, responsibilities, and qualifications..."
           />
         </div>
 
         <div className="flex gap-4">
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !title.trim()}
             className="px-4 py-2 bg-slate-800 text-white rounded disabled:opacity-50"
           >
             {loading ? "Creating..." : "Create Position"}
