@@ -18,6 +18,13 @@ enum ApplicationResult {
   FAILED
 }
 
+enum EvaluationStatus {
+  PENDING
+  IN_REVIEW
+  PASSED
+  FAILED
+}
+
 enum QuestionType {
   TEXT
   MULTIPLE_CHOICE
@@ -45,32 +52,36 @@ model Position {
 }
 
 model Question {
-  id           String       @id @default(cuid())
-  positionId   String
-  order        Int          @default(0)
-  text         String // The question text
-  type         QuestionType @default(TEXT)
-  options      String? // JSON array for MULTIPLE_CHOICE options
-  voiceType    String? // "ai" | "video" | "text" (optional for future features)
-  aiVideoUrl   String? // optional URL for AI-generated video
-  uploadedMeta String? // JSON metadata for manager-uploaded interviewer video
-  position     Position     @relation(fields: [positionId], references: [id], onDelete: Cascade)
-  answers      Answer[]
-  createdAt    DateTime     @default(now())
+  id            String       @id @default(cuid())
+  positionId    String
+  order         Int          @default(0)
+  text          String // The question text
+  type          QuestionType @default(TEXT)
+  options       String? // JSON array for MULTIPLE_CHOICE options
+  weight        Int          @default(1) // Weight for scoring calculations
+  correctOption String? // For future MULTIPLE_CHOICE auto-scoring (placeholder)
+  voiceType     String? // "ai" | "video" | "text" (optional for future features)
+  aiVideoUrl    String? // optional URL for AI-generated video
+  uploadedMeta  String? // JSON metadata for manager-uploaded interviewer video
+  position      Position     @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  answers       Answer[]
+  createdAt     DateTime     @default(now())
 }
 
 model Application {
-  id            String            @id @default(cuid())
-  positionId    String
-  name          String
-  email         String
-  resumeUrl     String?
-  startedAt     DateTime          @default(now())
-  completedAt   DateTime?
-  status        String            @default("in_progress") // in_progress | completed
-  overallResult ApplicationResult @default(PENDING)
-  answers       Answer[]
-  position      Position          @relation(fields: [positionId], references: [id])
+  id               String            @id @default(cuid())
+  positionId       String
+  name             String
+  email            String
+  resumeUrl        String?
+  startedAt        DateTime          @default(now())
+  completedAt      DateTime?
+  status           String            @default("in_progress") // in_progress | completed
+  overallResult    ApplicationResult @default(PENDING)
+  totalScore       Int? // Total calculated score for evaluation
+  evaluationStatus EvaluationStatus  @default(PENDING) // Evaluation status
+  answers          Answer[]
+  position         Position          @relation(fields: [positionId], references: [id])
 }
 
 model Answer {
@@ -78,6 +89,7 @@ model Answer {
   applicationId String
   questionId    String
   response      String // The applicant's text response
+  score         Int? // Manager-assigned or auto-calculated score
   recordedMeta  String? // Optional JSON metadata for recorded answers
   recordedUrl   String? // Optional URL for recorded content
   startedAt     DateTime?

@@ -1,5 +1,8 @@
 import { QuestionType, ApplicationResult } from "@prisma/client";
 
+// Type for evaluation status
+export type EvaluationStatus = "PENDING" | "IN_REVIEW" | "PASSED" | "FAILED";
+
 // Base types from Prisma schema
 export interface Question {
   id: string;
@@ -7,6 +10,8 @@ export interface Question {
   text: string;
   type: QuestionType;
   options: string | null;
+  weight: number;
+  correctOption?: string | null;
   order: number;
   createdAt: Date;
   voiceType?: string | null;
@@ -19,6 +24,7 @@ export interface Answer {
   applicationId: string;
   questionId: string;
   response: string;
+  score?: number | null;
   recordedMeta?: string | null;
   recordedUrl?: string | null;
   startedAt?: Date | null;
