@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -48,7 +49,10 @@ export default function QATestPage() {
   } = useAnswers(selectedApplicationId);
 
   const handleCreateQuestion = async () => {
-    if (!newQuestionText.trim()) return;
+    if (!newQuestionText.trim()) {
+      toast.error("Please enter a question");
+      return;
+    }
 
     try {
       const questionData = {
@@ -60,10 +64,12 @@ export default function QATestPage() {
       };
 
       await createQuestion(questionData);
+      toast.success("Question created successfully!");
       setNewQuestionText("");
       setNewQuestionOptions(["", ""]);
     } catch (error) {
       console.error("Failed to create question:", error);
+      toast.error("Failed to create question");
     }
   };
 
@@ -71,19 +77,26 @@ export default function QATestPage() {
     if (window.confirm("Are you sure you want to delete this question? All associated answers will also be deleted.")) {
       try {
         await deleteQuestion(questionId);
+        toast.success("Question deleted successfully");
       } catch (error) {
         console.error("Failed to delete question:", error);
+        toast.error("Failed to delete question");
       }
     }
   };
 
   const handleSubmitAnswer = async (questionId: string, response: string) => {
-    if (!response.trim()) return;
+    if (!response.trim()) {
+      toast.error("Please enter an answer");
+      return;
+    }
 
     try {
       await submitAnswer({ questionId, response: response.trim() });
+      toast.success("Answer submitted successfully!");
     } catch (error) {
       console.error("Failed to submit answer:", error);
+      toast.error("Failed to submit answer");
     }
   };
 
@@ -362,14 +375,19 @@ function QuestionCard({
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   const handleSubmit = async () => {
-    if (!response.trim()) return;
+    if (!response.trim()) {
+      toast.error("Please enter an answer");
+      return;
+    }
 
     setIsSubmitting(true);
     try {
       await onSubmitAnswer(question.id, response);
       setResponse("");
+      // Note: The success toast is handled in the parent component's handleSubmitAnswer
     } catch (error) {
       console.error("Failed to submit answer:", error);
+      // Note: The error toast is handled in the parent component's handleSubmitAnswer
     } finally {
       setIsSubmitting(false);
     }

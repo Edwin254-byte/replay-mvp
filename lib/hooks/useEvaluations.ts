@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import {
   ScoreAnswerRequest,
   ScoreAnswerResponse,
@@ -30,10 +31,12 @@ export function useScoreAnswer() {
         throw new Error(data.error || "Failed to score answer");
       }
 
+      toast.success("Answer scored successfully");
       return data;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to score answer";
       setError(errorMessage);
+      toast.error(errorMessage);
       throw err;
     } finally {
       setLoading(false);
@@ -70,10 +73,12 @@ export function useFinalizeApplication() {
         throw new Error(data.error || "Failed to finalize application evaluation");
       }
 
+      toast.success(data.message || "Application evaluation finalized successfully");
       return data;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to finalize application evaluation";
       setError(errorMessage);
+      toast.error(errorMessage);
       throw err;
     } finally {
       setLoading(false);
@@ -115,6 +120,7 @@ export function useApplicationEvaluation(applicationId?: string) {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to fetch application evaluation";
       setError(errorMessage);
+      toast.error(errorMessage);
       throw err;
     } finally {
       setLoading(false);
@@ -156,6 +162,7 @@ export function useEvaluationWorkflow() {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to score multiple answers";
       setWorkflowError(errorMessage);
+      toast.error(errorMessage);
       throw err;
     } finally {
       setWorkflowLoading(false);
@@ -177,10 +184,12 @@ export function useEvaluationWorkflow() {
       // Refresh evaluation data
       await applicationEvaluation.fetchEvaluation(applicationId);
 
+      toast.success("Evaluation completed successfully!");
       return finalizeResult;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to complete evaluation workflow";
       setWorkflowError(errorMessage);
+      toast.error(errorMessage);
       throw err;
     } finally {
       setWorkflowLoading(false);
