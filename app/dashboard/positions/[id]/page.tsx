@@ -66,10 +66,12 @@ export default async function EditPositionPage({ params }: { params: Promise<{ i
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <p className="font-medium">
-                        #{index + 1}: {question.title}
+                        #{index + 1}: {question.text}
                       </p>
-                      <p className="text-sm text-slate-600 mt-1">{question.prompt}</p>
-                      <p className="text-xs text-slate-500 mt-1">Type: {question.voiceType}</p>
+                      <p className="text-sm text-slate-600 mt-1">Type: {question.type}</p>
+                      {question.voiceType && (
+                        <p className="text-xs text-slate-500 mt-1">Voice Type: {question.voiceType}</p>
+                      )}
                     </div>
                     <Link
                       href={`/dashboard/positions/${position.id}/questions/${question.id}/edit`}

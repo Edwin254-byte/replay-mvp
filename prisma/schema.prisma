@@ -45,16 +45,18 @@ model Position {
 }
 
 model Question {
-  id           String   @id @default(cuid())
+  id           String       @id @default(cuid())
   positionId   String
-  order        Int
-  title        String
-  prompt       String
-  voiceType    String // "ai" | "video" | "text"
-  aiVideoUrl   String?
-  uploadedMeta String? // JSON metadata for manager-uploaded interviewer video (filename, mimetype)
-  position     Position @relation(fields: [positionId], references: [id])
-  Answer       Answer[]
+  order        Int          @default(0)
+  text         String // The question text
+  type         QuestionType @default(TEXT)
+  options      String? // JSON array for MULTIPLE_CHOICE options
+  voiceType    String? // "ai" | "video" | "text" (optional for future features)
+  aiVideoUrl   String? // optional URL for AI-generated video
+  uploadedMeta String? // JSON metadata for manager-uploaded interviewer video
+  position     Position     @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  answers      Answer[]
+  createdAt    DateTime     @default(now())
 }
 
 model Application {
@@ -75,11 +77,14 @@ model Answer {
   id            String      @id @default(cuid())
   applicationId String
   questionId    String
-  recordedMeta  String // JSON metadata describing the recorded file for simulation: { filename, mimetype, size, duration}
-  recordedUrl   String? // optional URL placeholder (we won't persist real file for simulate-only)
+  response      String // The applicant's text response
+  recordedMeta  String? // Optional JSON metadata for recorded answers
+  recordedUrl   String? // Optional URL for recorded content
   startedAt     DateTime?
   endedAt       DateTime?
-  result        String?
-  application   Application @relation(fields: [applicationId], references: [id])
-  question      Question    @relation(fields: [questionId], references: [id])
+  result        String? // Optional evaluation result
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  question      Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 }

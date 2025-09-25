@@ -3,13 +3,13 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
   try {
-    const { positionId, title, prompt, voiceType, order } = await request.json();
+    const { positionId, text, type, voiceType, order } = await request.json();
 
     const question = await prisma.question.create({
       data: {
         positionId,
-        title,
-        prompt,
+        text,
+        type: type || "TEXT",
         voiceType,
         order: order || 1,
       },

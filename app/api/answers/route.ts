@@ -7,8 +7,9 @@ export async function POST(request: NextRequest) {
     const file = formData.get("file") as File;
     const questionId = formData.get("questionId") as string;
     const applicationId = formData.get("applicationId") as string;
+    const response = formData.get("response") as string;
 
-    if (!file || !questionId || !applicationId) {
+    if (!file || !questionId || !applicationId || !response) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
@@ -24,6 +25,7 @@ export async function POST(request: NextRequest) {
       data: {
         applicationId,
         questionId,
+        response, // Required field for the text response
         recordedMeta,
         recordedUrl: null, // Simulated - would store actual URL in production
         startedAt: new Date(),
