@@ -6,18 +6,19 @@ interface Position {
   id: string;
   title: string;
   description?: string;
-  publicId: string;
   createdAt: string;
 }
 
-interface JobApplication {
+interface Application {
   id: string;
   name: string;
   email: string;
   resumeUrl?: string;
-  status: "PENDING" | "SHORTLISTED" | "REJECTED";
+  status: "in_progress" | "completed";
+  overallResult: "PENDING" | "PASSED" | "FAILED";
   positionId: string;
-  createdAt: string;
+  startedAt: string;
+  completedAt?: string;
   position: {
     id: string;
     title: string;
@@ -33,7 +34,7 @@ interface NewApplicationForm {
 export default function TestApplicationsPage() {
   const [positions, setPositions] = useState<Position[]>([]);
   const [selectedPosition, setSelectedPosition] = useState("");
-  const [applications, setApplications] = useState<JobApplication[]>([]);
+  const [applications, setApplications] = useState<Application[]>([]);
   const [newApplication, setNewApplication] = useState<NewApplicationForm>({
     name: "",
     email: "",
@@ -58,7 +59,7 @@ export default function TestApplicationsPage() {
 
   const fetchApplications = async (positionId: string) => {
     try {
-      const response = await fetch(`/api/job-applications/${positionId}`);
+      const response = await fetch(`/api/positions/${positionId}/applications`);
       if (response.ok) {
         const data = await response.json();
         setApplications(data.applications);
@@ -77,7 +78,7 @@ export default function TestApplicationsPage() {
     }
 
     try {
-      const response = await fetch("/api/job-applications", {
+      const response = await fetch("/api/applications", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -211,14 +212,24 @@ export default function TestApplicationsPage() {
                       <strong>Status:</strong>{" "}
                       <span
                         className={`px-2 py-1 rounded text-xs ${
-                          app.status === "PENDING"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : app.status === "SHORTLISTED"
+                          app.status === "in_progress" ? "bg-yellow-100 text-yellow-800" : "bg-green-100 text-green-800"
+                        }`}
+                      >
+                        {app.status}
+                      </span>
+                    </p>
+                    <p>
+                      <strong>Result:</strong>{" "}
+                      <span
+                        className={`px-2 py-1 rounded text-xs ${
+                          app.overallResult === "PENDING"
+                            ? "bg-gray-100 text-gray-800"
+                            : app.overallResult === "PASSED"
                               ? "bg-green-100 text-green-800"
                               : "bg-red-100 text-red-800"
                         }`}
                       >
-                        {app.status}
+                        {app.overallResult}
                       </span>
                     </p>
                     {app.resumeUrl && (
@@ -234,7 +245,10 @@ export default function TestApplicationsPage() {
                         </a>
                       </p>
                     )}
-                    <p className="text-sm text-gray-600">Applied: {new Date(app.createdAt).toLocaleDateString()}</p>
+                    <p className="text-sm text-gray-600">
+                      Started: {new Date(app.startedAt).toLocaleDateString()}
+                      {app.completedAt && <span> • Completed: {new Date(app.completedAt).toLocaleDateString()}</span>}
+                    </p>
                   </div>
                 ))}
               </div>

@@ -7,13 +7,11 @@ export default async function EditPositionPage({ params }: { params: Promise<{ i
     where: { id },
     include: {
       questions: { orderBy: { order: "asc" } },
-      jobApplications: true,
-      hiringQuestions: true,
+      applications: true,
       _count: {
         select: {
-          jobApplications: true,
-          hiringQuestions: true,
           applications: true,
+          questions: true,
         },
       },
     },
@@ -36,18 +34,14 @@ export default async function EditPositionPage({ params }: { params: Promise<{ i
           <p>
             <strong>Description:</strong> {position.description || "No description"}
           </p>
-          <div className="mt-4 grid grid-cols-3 gap-4">
+          <div className="mt-4 grid grid-cols-2 gap-4">
             <div>
-              <p className="text-sm text-slate-600">Job Applications</p>
-              <p className="text-2xl font-semibold">{position._count.jobApplications}</p>
-            </div>
-            <div>
-              <p className="text-sm text-slate-600">Hiring Questions</p>
-              <p className="text-2xl font-semibold">{position._count.hiringQuestions}</p>
-            </div>
-            <div>
-              <p className="text-sm text-slate-600">Interview Applications</p>
+              <p className="text-sm text-slate-600">Applications</p>
               <p className="text-2xl font-semibold">{position._count.applications}</p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-600">Interview Questions</p>
+              <p className="text-2xl font-semibold">{position._count.questions}</p>
             </div>
           </div>
         </div>
@@ -92,22 +86,12 @@ export default async function EditPositionPage({ params }: { params: Promise<{ i
 
         <div className="border rounded p-4">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-medium">Hiring Questions ({position.hiringQuestions?.length || 0})</h2>
-            <Link href={`/test-hiring-qa`} className="px-4 py-2 bg-blue-600 text-white rounded">
-              Manage Hiring Q&A
-            </Link>
-          </div>
-          <p className="text-slate-600">Questions for job applicants to answer during the application process.</p>
-        </div>
-
-        <div className="border rounded p-4">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-medium">Job Applications ({position.jobApplications?.length || 0})</h2>
+            <h2 className="text-xl font-medium">Applications ({position.applications?.length || 0})</h2>
             <Link href={`/test-applications`} className="px-4 py-2 bg-green-600 text-white rounded">
               View Applications
             </Link>
           </div>
-          <p className="text-slate-600">Job applications submitted for this position.</p>
+          <p className="text-slate-600">AI interview applications submitted for this position.</p>
         </div>
 
         <div className="flex gap-4">

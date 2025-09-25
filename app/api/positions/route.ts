@@ -16,12 +16,10 @@ export async function GET(request: NextRequest) {
       include: {
         questions: true,
         applications: true,
-        jobApplications: true,
-        hiringQuestions: true,
         _count: {
           select: {
-            jobApplications: true,
-            hiringQuestions: true,
+            applications: true,
+            questions: true,
           },
         },
       },

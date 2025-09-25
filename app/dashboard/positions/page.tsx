@@ -17,8 +17,7 @@ export default async function PositionsPage() {
     include: {
       _count: {
         select: {
-          jobApplications: true,
-          hiringQuestions: true,
+          applications: true,
           questions: true,
         },
       },
@@ -58,17 +57,13 @@ export default async function PositionsPage() {
                 </Link>
               </div>
 
-              <div className="grid grid-cols-3 gap-4 mt-4 text-sm">
+              <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
                 <div>
-                  <span className="text-slate-600">Job Applications:</span>
-                  <span className="ml-1 font-semibold">{p._count.jobApplications}</span>
+                  <span className="text-slate-600">Applications:</span>
+                  <span className="ml-1 font-semibold">{p._count.applications}</span>
                 </div>
                 <div>
-                  <span className="text-slate-600">Hiring Questions:</span>
-                  <span className="ml-1 font-semibold">{p._count.hiringQuestions}</span>
-                </div>
-                <div>
-                  <span className="text-slate-600">Interview Questions:</span>
+                  <span className="text-slate-600">Questions:</span>
                   <span className="ml-1 font-semibold">{p._count.questions}</span>
                 </div>
               </div>

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
   try {
-    const { positionId, name, email } = await request.json();
+    const { positionId, name, email, resumeUrl } = await request.json();
 
     // Find position by id
     const position = await prisma.position.findUnique({
@@ -19,11 +19,13 @@ export async function POST(request: NextRequest) {
         positionId: position.id,
         name,
         email,
+        resumeUrl: resumeUrl || undefined,
       },
     });
 
     return NextResponse.json({ applicationId: application.id });
   } catch (error) {
+    console.error("Error creating application:", error);
     return NextResponse.json({ error: "Failed to create application" }, { status: 500 });
   }
 }
