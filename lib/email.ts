@@ -6,7 +6,7 @@ export async function sendApplicantInvite(to: string, link: string) {
   await resend.emails.send({
     from: process.env.FROM_EMAIL!,
     to,
-    subject: "Your Replay Interview Link",
+    subject: "Your QuestAI Interview Link",
     html: `<p>Click <a href="${link}">here</a> to start your interview.</p>`,
   });
 }
@@ -140,7 +140,7 @@ export async function sendApplicationCompleteEmails({
             </a>
           </div>
           
-          <p>Best regards,<br>Replay Interview System</p>
+          <p>Best regards,<br>QuestAI Interview System</p>
           
           <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
           <p style="font-size: 12px; color: #666;">

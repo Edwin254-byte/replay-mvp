@@ -24,12 +24,15 @@ export default function Home() {
             </Badge>
 
             <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-6xl lg:text-7xl">
-              Revolutionize Your <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Interview Process</span>
+              Revolutionize Your{" "}
+              <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                Interview Process
+              </span>
             </h1>
 
             <p className="mt-6 text-lg leading-8 text-slate-600 sm:text-xl">
-              Streamline hiring with AI-powered interviews. From candidate screening to detailed analytics, transform how you discover top talent with
-              intelligent automation.
+              Streamline hiring with AI-powered interviews. From candidate screening to detailed analytics, transform
+              how you discover top talent with intelligent automation.
             </p>
 
             <div className="mt-10 flex items-center justify-center gap-6 flex-wrap">
@@ -40,10 +43,6 @@ export default function Home() {
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Link>
               </Button>
-
-              <Button asChild variant="outline" size="lg" className="h-12 px-8 text-base">
-                <Link href="/public/sample">Experience Demo</Link>
-              </Button>
             </div>
           </div>
         </div>
@@ -53,7 +52,9 @@ export default function Home() {
       <section className="py-24 sm:py-32">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Everything you need for modern recruiting</h2>
+            <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+              Everything you need for modern recruiting
+            </h2>
             <p className="mt-4 text-lg text-slate-600">
               Our platform combines AI intelligence with intuitive design to make hiring effortless and effective.
             </p>
@@ -123,7 +124,9 @@ export default function Home() {
 
         <div className="relative z-10 mx-auto max-w-7xl px-6 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">Ready to transform your hiring?</h2>
+            <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+              Ready to transform your hiring?
+            </h2>
             <p className="mt-6 text-lg leading-8 text-slate-300">
               Join forward-thinking companies using AI to build better teams. Start your journey today.
             </p>
@@ -157,11 +160,11 @@ export default function Home() {
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600">
                   <Zap className="h-5 w-5 text-white" />
                 </div>
-                <span className="text-xl font-bold text-slate-900">Replay</span>
+                <span className="text-xl font-bold text-slate-900">QuestAI</span>
               </div>
               <p className="text-slate-600 mb-4 max-w-md">
-                Revolutionizing the interview process with AI-powered screening and analytics. Make better hiring decisions with intelligent
-                automation.
+                Revolutionizing the interview process with AI-powered screening and analytics. Make better hiring
+                decisions with intelligent automation.
               </p>
               <div className="flex space-x-4">
                 <Button asChild variant="outline" size="sm">
@@ -231,7 +234,7 @@ export default function Home() {
           {/* Bottom section */}
           <div className="mt-8 pt-8 border-t border-slate-200">
             <div className="flex flex-col md:flex-row justify-between items-center">
-              <p className="text-slate-500 text-sm">© 2025 Replay AI Interview Platform. All rights reserved.</p>
+              <p className="text-slate-500 text-sm">© 2025 QuestAI Interview Platform. All rights reserved.</p>
               <div className="flex items-center space-x-6 mt-4 md:mt-0">
                 <a href="#" className="text-slate-500 hover:text-slate-900 transition-colors text-sm">
                   Privacy Policy

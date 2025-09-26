@@ -4,7 +4,7 @@ import { Providers } from "./providers";
 import { Toaster } from "@/components/ui/sonner";
 
 export const metadata = {
-  title: "Replay — AI Interview (MVP)",
+  title: "QuestAI MVP)",
   description: "Manager + Applicant flows (MVP)",
 };
 
