@@ -1,8 +1,9 @@
 "use client";
+import PositionAnalytics from "@/components/dashboard/position-analytics";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -263,15 +264,7 @@ export default function EditPositionPage() {
         </TabsContent>
 
         <TabsContent value="analytics" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Analytics</CardTitle>
-              <CardDescription>View performance metrics for this position</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600">Analytics content will be displayed here.</p>
-            </CardContent>
-          </Card>
+          <PositionAnalytics positionId={params.id as string} />
         </TabsContent>
       </Tabs>
     </div>

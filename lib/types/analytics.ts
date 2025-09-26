@@ -140,3 +140,20 @@ export type AnalyticsEndpoint =
   | "trends"
   | "abandoned"
   | "completion-ratio";
+
+export interface ApplicationAnalytics {
+  id: string;
+  applicant: string;
+  email: string;
+  started: string;
+  ended: string | null;
+  progress: "In Progress" | "Completed";
+  status: "Not Scored" | "Pass" | "Fail" | "Null";
+  application: string;
+}
+
+export interface PositionAnalytics {
+  inProgressApps: number;
+  completedApps: number;
+  passedApps: number;
+}
