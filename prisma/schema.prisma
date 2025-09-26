@@ -30,6 +30,12 @@ enum QuestionType {
   MULTIPLE_CHOICE
 }
 
+enum QuestionSource {
+  MANUAL
+  AI_GENERATED
+  AI_SUGGESTED
+}
+
 model User {
   id        String     @id @default(cuid())
   email     String     @unique
@@ -54,21 +60,24 @@ model Position {
 }
 
 model Question {
-  id            String       @id @default(cuid())
+  id            String         @id @default(cuid())
   positionId    String
-  order         Int          @default(0)
+  order         Int            @default(0)
   title         String? // Optional question title
   text          String // The question text
-  type          QuestionType @default(TEXT)
+  type          QuestionType   @default(TEXT)
+  source        QuestionSource @default(MANUAL) // Track if AI or manual
+  aiPrompt      String? // Store the AI context/prompt used
+  generatedAt   DateTime? // When AI generated this question
   options       String? // JSON array for MULTIPLE_CHOICE options
-  weight        Int          @default(1) // Weight for scoring calculations
+  weight        Int            @default(1) // Weight for scoring calculations
   correctOption String? // For future MULTIPLE_CHOICE auto-scoring (placeholder)
   voiceType     String? // "ai" | "video" | "text" (optional for future features)
   aiVideoUrl    String? // optional URL for AI-generated video
   uploadedMeta  String? // JSON metadata for manager-uploaded interviewer video
-  position      Position     @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  position      Position       @relation(fields: [positionId], references: [id], onDelete: Cascade)
   answers       Answer[]
-  createdAt     DateTime     @default(now())
+  createdAt     DateTime       @default(now())
 }
 
 model Application {

@@ -14,6 +14,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { getDefaultMessages } from "@/lib/default-messages";
 
 // Type definitions
 interface Question {
@@ -21,6 +22,7 @@ interface Question {
   title: string;
   text: string;
   type: string;
+  source?: string;
   order: number;
   voiceType?: string;
 }
@@ -52,6 +54,7 @@ export default function EditPositionPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [newQuestion, setNewQuestion] = useState({ title: "", text: "" });
   const [addingQuestion, setAddingQuestion] = useState(false);
+  const [generatingAIQuestions, setGeneratingAIQuestions] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
@@ -64,8 +67,12 @@ export default function EditPositionPage() {
           setPosition(data);
           setPositionTitle(data.title);
           setPositionDescription(data.description || "");
-          setIntroText(data.introText || "");
-          setFarewellText(data.farewellText || "");
+
+          // Set default messages if they're empty
+          const defaultMessages = getDefaultMessages(data.title);
+          setIntroText(data.introText || defaultMessages.intro);
+          setFarewellText(data.farewellText || defaultMessages.farewell);
+
           setQuestions(data.questions || []);
         } else {
           console.error("Failed to fetch position");
@@ -88,6 +95,18 @@ export default function EditPositionPage() {
     const shareUrl = `${window.location.origin}/public/${params.id}`;
     navigator.clipboard.writeText(shareUrl);
     toast.success("Share link copied to clipboard!");
+  };
+
+  const handleRestoreDefaultMessages = () => {
+    if (!positionTitle.trim()) {
+      toast.error("Please enter a position title first");
+      return;
+    }
+
+    const defaultMessages = getDefaultMessages(positionTitle);
+    setIntroText(defaultMessages.intro);
+    setFarewellText(defaultMessages.farewell);
+    toast.success("Default messages restored!");
   };
 
   const handleSavePosition = async () => {
@@ -157,6 +176,62 @@ export default function EditPositionPage() {
       toast.error("Error adding question");
     } finally {
       setAddingQuestion(false);
+    }
+  };
+
+  const handleGenerateAIQuestions = async () => {
+    if (!positionTitle.trim()) {
+      toast.error("Please save the position title first");
+      return;
+    }
+
+    try {
+      setGeneratingAIQuestions(true);
+
+      // Show initial loading message
+      toast.loading("🤖 AI is analyzing your position and generating questions...", {
+        id: "ai-generating",
+      });
+
+      const response = await fetch(`/api/positions/${params.id}/generate-questions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          questionCount: 5,
+          difficulty: "mid",
+          categories: ["technical", "behavioral", "problem-solving"],
+          replaceExisting: false, // Add to existing questions
+        }),
+      });
+
+      if (response.ok) {
+        const { data, message } = await response.json();
+
+        // Add the new questions to the existing questions
+        setQuestions(prev => [...prev, ...data.questions]);
+
+        // Dismiss loading toast and show success
+        toast.dismiss("ai-generating");
+
+        if (data.isUsingFallback) {
+          toast.success(
+            `✨ Generated ${data.count} professional questions! Our expert templates were used while AI service was busy.`,
+            { duration: 5000 }
+          );
+        } else {
+          toast.success(`🎯 ${message}`, { duration: 4000 });
+        }
+      } else {
+        const errorData = await response.json();
+        toast.dismiss("ai-generating");
+        toast.error(errorData.error || "Failed to generate questions");
+      }
+    } catch (error) {
+      console.error("Error generating AI questions:", error);
+      toast.dismiss("ai-generating");
+      toast.error("Error connecting to AI service");
+    } finally {
+      setGeneratingAIQuestions(false);
     }
   };
 
@@ -242,16 +317,47 @@ export default function EditPositionPage() {
             {/* Questions Section */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg font-medium">Interview Questions</CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg font-medium">Interview Questions</CardTitle>
+                  <Button
+                    onClick={handleGenerateAIQuestions}
+                    disabled={generatingAIQuestions || !positionTitle.trim()}
+                    variant="outline"
+                    size="sm"
+                    className="bg-gradient-to-r from-blue-500 to-purple-600 text-white border-none hover:from-blue-600 hover:to-purple-700"
+                  >
+                    {generatingAIQuestions ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>AI is thinking...</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center space-x-2">
+                        <span>✨</span>
+                        <span>Generate AI Questions</span>
+                      </div>
+                    )}
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Introduction */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="font-medium">Introduction</h3>
-                    <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
-                      Optional
-                    </Badge>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleRestoreDefaultMessages}
+                        className="text-blue-600 hover:text-blue-800"
+                      >
+                        🔄 Restore Defaults
+                      </Button>
+                      <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                        Optional
+                      </Badge>
+                    </div>
                   </div>
                   <div className="flex items-start space-x-4">
                     <Avatar className="w-16 h-20">
@@ -263,7 +369,7 @@ export default function EditPositionPage() {
                       <Textarea
                         id="introduction"
                         className="mt-2"
-                        placeholder="Enter introduction text..."
+                        placeholder="A welcoming introduction message will be automatically generated based on your position title..."
                         rows={3}
                         value={introText}
                         onChange={e => setIntroText(e.target.value)}
@@ -276,7 +382,17 @@ export default function EditPositionPage() {
                 {questions.map((question, index) => (
                   <div key={question.id} className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <h3 className="font-medium">{question.title || `Question ${index + 1}`}</h3>
+                      <div className="flex items-center space-x-2">
+                        <h3 className="font-medium">{question.title || `Question ${index + 1}`}</h3>
+                        {question.source === "AI_GENERATED" && (
+                          <Badge
+                            variant="secondary"
+                            className="bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 border-blue-200"
+                          >
+                            ✨ AI
+                          </Badge>
+                        )}
+                      </div>
                       <div className="flex items-center space-x-2">
                         <Button
                           variant="ghost"
@@ -372,7 +488,7 @@ export default function EditPositionPage() {
                       <Textarea
                         id="farewell"
                         className="mt-2"
-                        placeholder="Enter farewell message..."
+                        placeholder="A professional farewell message will be automatically generated based on your position title..."
                         rows={3}
                         value={farewellText}
                         onChange={e => setFarewellText(e.target.value)}
