@@ -1,107 +1,279 @@
-import { prisma } from "@/lib/prisma";
-import Link from "next/link";
+"use client";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { Application } from "@prisma/client";
+import { Copy, Eye, Plus } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
-export default async function EditPositionPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const position = await prisma.position.findUnique({
-    where: { id },
-    include: {
-      questions: { orderBy: { order: "asc" } },
-      applications: true,
-      _count: {
-        select: {
-          applications: true,
-          questions: true,
-        },
-      },
-    },
-  });
+// Type definitions
+interface Question {
+  id: string;
+  text: string;
+  type: string;
+  order: number;
+  voiceType?: string;
+}
+
+interface Position {
+  id: string;
+  title: string;
+  description: string | null;
+  createdAt: Date;
+  userId: string;
+  questions: Question[];
+  applications: Application[];
+  _count: {
+    applications: number;
+    questions: number;
+  };
+}
+
+export default function EditPositionPage() {
+  const params = useParams();
+  const router = useRouter();
+  const [position, setPosition] = useState<Position | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [positionTitle, setPositionTitle] = useState("");
+
+  useEffect(() => {
+    const fetchPosition = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/positions/${params.id}`);
+        if (response.ok) {
+          const data = await response.json();
+          setPosition(data);
+          setPositionTitle(data.title);
+        } else {
+          console.error("Failed to fetch position");
+        }
+      } catch (error) {
+        console.error("Error fetching position:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (params.id) {
+      fetchPosition();
+    }
+  }, [params.id]);
+
+  const handleCopyShareLink = () => {
+    const shareUrl = `${window.location.origin}/public/${params.id}`;
+    navigator.clipboard.writeText(shareUrl);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin w-8 h-8 border-2 border-gray-300 border-t-gray-900 rounded-full"></div>
+      </div>
+    );
+  }
 
   if (!position) {
     return <div>Position not found</div>;
   }
 
   return (
-    <div>
-      <h1 className="text-2xl font-semibold mb-6">Edit Position: {position.title}</h1>
-
-      <div className="space-y-6">
-        <div className="border rounded p-4">
-          <h2 className="text-xl font-medium mb-4">Position Details</h2>
-          <p>
-            <strong>Title:</strong> {position.title}
-          </p>
-          <p>
-            <strong>Description:</strong> {position.description || "No description"}
-          </p>
-          <div className="mt-4 grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-slate-600">Applications</p>
-              <p className="text-2xl font-semibold">{position._count.applications}</p>
-            </div>
-            <div>
-              <p className="text-sm text-slate-600">Interview Questions</p>
-              <p className="text-2xl font-semibold">{position._count.questions}</p>
-            </div>
+    <div className="max-w-6xl mx-auto p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-4">
+          <Button variant="ghost" onClick={() => router.back()} className="p-2">
+            ←
+          </Button>
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900">{position.title}</h1>
+            <p className="text-gray-600">Hiring</p>
           </div>
         </div>
-
-        <div className="border rounded p-4">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-medium">Interview Questions ({position.questions.length})</h2>
-            <Link
-              href={`/dashboard/positions/${position.id}/questions/new`}
-              className="px-4 py-2 bg-slate-800 text-white rounded"
-            >
-              Add Question
-            </Link>
-          </div>
-
-          {position.questions.length === 0 ? (
-            <p className="text-slate-600">No questions added yet.</p>
-          ) : (
-            <ul className="space-y-2">
-              {position.questions.map((question, index) => (
-                <li key={question.id} className="border rounded p-3">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <p className="font-medium">
-                        #{index + 1}: {question.text}
-                      </p>
-                      <p className="text-sm text-slate-600 mt-1">Type: {question.type}</p>
-                      {question.voiceType && (
-                        <p className="text-xs text-slate-500 mt-1">Voice Type: {question.voiceType}</p>
-                      )}
-                    </div>
-                    <Link
-                      href={`/dashboard/positions/${position.id}/questions/${question.id}/edit`}
-                      className="text-blue-600 underline text-sm"
-                    >
-                      Edit
-                    </Link>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="border rounded p-4">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-medium">Applications ({position.applications?.length || 0})</h2>
-            <Link href={`/test-applications`} className="px-4 py-2 bg-green-600 text-white rounded">
-              View Applications
-            </Link>
-          </div>
-          <p className="text-slate-600">AI interview applications submitted for this position.</p>
-        </div>
-
-        <div className="flex gap-4">
-          <Link href="/dashboard/positions" className="px-4 py-2 border rounded">
-            Back to Positions
-          </Link>
+        <div className="flex items-center space-x-3">
+          <Button variant="outline" size="sm">
+            <Eye className="w-4 h-4 mr-2" />
+            Preview
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleCopyShareLink}>
+            <Copy className="w-4 h-4 mr-2" />
+            Copy Share Link
+          </Button>
         </div>
       </div>
+
+      {/* Tabs */}
+      <Tabs defaultValue="edit" className="w-full">
+        <TabsList className="grid w-fit grid-cols-2">
+          <TabsTrigger value="edit">Edit</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="edit" className="mt-6">
+          <div className="space-y-6">
+            {/* Position Title Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg font-medium">Position Title</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Input value={positionTitle} onChange={e => setPositionTitle(e.target.value)} className="w-full" placeholder="Enter position title" />
+              </CardContent>
+            </Card>
+
+            {/* Interview Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg font-medium">Interview</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Introduction */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-medium">Introduction</h3>
+                    <Badge variant="destructive" className="bg-red-100 text-red-800">
+                      !
+                    </Badge>
+                  </div>
+                  <div className="flex items-start space-x-4">
+                    <Avatar className="w-16 h-20">
+                      <AvatarImage src="/placeholder-woman.jpg" />
+                      <AvatarFallback className="bg-gray-200">👩</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <Label htmlFor="introduction">Introduction</Label>
+                      <Textarea id="introduction" className="mt-2" placeholder="Enter introduction text..." rows={3} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Question 1 */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-medium">Question 1</h3>
+                    <div className="flex items-center space-x-2">
+                      <Button variant="ghost" size="sm">
+                        <Copy className="w-4 h-4" />
+                        Copy
+                      </Button>
+                      <Badge variant="destructive" className="bg-red-100 text-red-800">
+                        !
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-4">
+                    <Avatar className="w-16 h-20">
+                      <AvatarImage src="/placeholder-man.jpg" />
+                      <AvatarFallback className="bg-gray-200">👨</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 space-y-3">
+                      <div>
+                        <Label htmlFor="question1-title">Motivation</Label>
+                        <Input id="question1-title" className="mt-2" defaultValue="Motivation" />
+                      </div>
+                      <div>
+                        <Textarea
+                          className="mt-2"
+                          placeholder="It is very important to us that the person that fills this position is excited about working here. Why do you think ABC Company would be a good fit for you?"
+                          rows={4}
+                          defaultValue="It is very important to us that the person that fills this position is excited about working here. Why do you think ABC Company would be a good fit for you?"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Question 2 */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-medium">Question 2</h3>
+                    <div className="flex items-center space-x-2">
+                      <Button variant="ghost" size="sm">
+                        <Copy className="w-4 h-4" />
+                        Copy
+                      </Button>
+                      <Badge variant="destructive" className="bg-red-100 text-red-800">
+                        !
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-4">
+                    <div className="w-16 h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
+                      <Plus className="w-6 h-6 text-gray-400" />
+                    </div>
+                    <div className="flex-1 space-y-3">
+                      <div>
+                        <Label htmlFor="question2-title">Title</Label>
+                        <Input id="question2-title" className="mt-2" placeholder="Question title" />
+                      </div>
+                      <div>
+                        <Label htmlFor="question2-content">Full question</Label>
+                        <Textarea id="question2-content" className="mt-2" placeholder="Enter your question here..." rows={4} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Farewell Message */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-medium">Farewell Message</h3>
+                    <Badge variant="destructive" className="bg-red-100 text-red-800">
+                      !
+                    </Badge>
+                  </div>
+                  <div className="flex items-start space-x-4">
+                    <Avatar className="w-16 h-20">
+                      <AvatarImage src="/placeholder-woman.jpg" />
+                      <AvatarFallback className="bg-gray-200">👩</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <Label htmlFor="farewell">Farewell message script</Label>
+                      <Textarea id="farewell" className="mt-2" placeholder="Enter farewell message..." rows={3} />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Action Buttons */}
+            <div className="flex justify-between items-center">
+              <div className="flex space-x-3">
+                <Button variant="outline">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Question
+                </Button>
+                <Button variant="outline">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Introduction
+                </Button>
+                <Button variant="outline">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Farewell Message
+                </Button>
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="analytics" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Analytics</CardTitle>
+              <CardDescription>View performance metrics for this position</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600">Analytics content will be displayed here.</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
