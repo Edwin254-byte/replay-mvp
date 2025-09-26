@@ -14,8 +14,11 @@ export async function GET(request: NextRequest) {
       where: { userId: token.sub },
       orderBy: { createdAt: "desc" },
       include: {
-        questions: true,
-        applications: true,
+        applications: {
+          select: {
+            status: true,
+          },
+        },
         _count: {
           select: {
             applications: true,
