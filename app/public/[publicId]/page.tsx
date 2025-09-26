@@ -33,11 +33,11 @@ export default function ApplicantInfoPage({ params }: { params: Promise<{ public
 
       if (response.ok) {
         const { applicationId } = await response.json();
-        toast.success("Application created successfully!");
+        toast.success("Ready to start interview!");
         router.push(`/public/${publicId}/start/${applicationId}`);
       } else {
         const errorData = await response.json();
-        toast.error(errorData.error || "Failed to create application");
+        toast.error(errorData.error || "Failed to access application");
       }
     } catch (error) {
       console.error("Error creating application:", error);
@@ -52,6 +52,10 @@ export default function ApplicantInfoPage({ params }: { params: Promise<{ public
       <Card>
         <CardHeader>
           <CardTitle>Start Your Interview</CardTitle>
+          <p className="text-sm text-gray-600">
+            Enter your details to begin. If you&apos;ve started this interview before, you&apos;ll be returned to where
+            you left off.
+          </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -82,7 +86,7 @@ export default function ApplicantInfoPage({ params }: { params: Promise<{ public
             </div>
 
             <Button type="submit" disabled={loading || !name.trim() || !email.trim()} className="w-full">
-              {loading ? "Creating Application..." : "Start Interview"}
+              {loading ? "Accessing Application..." : "Continue to Interview"}
             </Button>
           </form>
         </CardContent>

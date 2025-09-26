@@ -44,6 +44,8 @@ model Position {
   id           String        @id @default(cuid())
   title        String
   description  String
+  introText    String? // Optional introduction message
+  farewellText String? // Optional farewell message
   userId       String
   user         User          @relation(fields: [userId], references: [id])
   questions    Question[]
@@ -55,6 +57,7 @@ model Question {
   id            String       @id @default(cuid())
   positionId    String
   order         Int          @default(0)
+  title         String? // Optional question title
   text          String // The question text
   type          QuestionType @default(TEXT)
   options       String? // JSON array for MULTIPLE_CHOICE options

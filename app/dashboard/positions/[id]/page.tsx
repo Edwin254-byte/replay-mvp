@@ -9,13 +9,16 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Application } from "@prisma/client";
-import { Copy, Eye, Plus } from "lucide-react";
+import { Copy, Eye, Plus, Trash2, X } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 // Type definitions
 interface Question {
   id: string;
+  title: string;
   text: string;
   type: string;
   order: number;
@@ -41,7 +44,15 @@ export default function EditPositionPage() {
   const router = useRouter();
   const [position, setPosition] = useState<Position | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [positionTitle, setPositionTitle] = useState("");
+  const [positionDescription, setPositionDescription] = useState("");
+  const [introText, setIntroText] = useState("");
+  const [farewellText, setFarewellText] = useState("");
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [newQuestion, setNewQuestion] = useState({ title: "", text: "" });
+  const [addingQuestion, setAddingQuestion] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
     const fetchPosition = async () => {
@@ -52,11 +63,17 @@ export default function EditPositionPage() {
           const data = await response.json();
           setPosition(data);
           setPositionTitle(data.title);
+          setPositionDescription(data.description || "");
+          setIntroText(data.introText || "");
+          setFarewellText(data.farewellText || "");
+          setQuestions(data.questions || []);
         } else {
           console.error("Failed to fetch position");
+          toast.error("Failed to load position details");
         }
       } catch (error) {
         console.error("Error fetching position:", error);
+        toast.error("Error loading position details");
       } finally {
         setLoading(false);
       }
@@ -70,6 +87,77 @@ export default function EditPositionPage() {
   const handleCopyShareLink = () => {
     const shareUrl = `${window.location.origin}/public/${params.id}`;
     navigator.clipboard.writeText(shareUrl);
+    toast.success("Share link copied to clipboard!");
+  };
+
+  const handleSavePosition = async () => {
+    if (!positionTitle.trim()) {
+      toast.error("Position title is required");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const response = await fetch(`/api/positions/${params.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: positionTitle.trim(),
+          description: positionDescription.trim(),
+          introText: introText.trim(),
+          farewellText: farewellText.trim(),
+        }),
+      });
+
+      if (response.ok) {
+        const { data } = await response.json();
+        setPosition(data);
+        toast.success("Position updated successfully!");
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || "Failed to update position");
+      }
+    } catch (error) {
+      console.error("Error updating position:", error);
+      toast.error("Error updating position");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAddQuestion = async () => {
+    if (!newQuestion.title.trim() || !newQuestion.text.trim()) {
+      toast.error("Question title and text are required");
+      return;
+    }
+
+    try {
+      setAddingQuestion(true);
+      const response = await fetch(`/api/positions/${params.id}/questions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: newQuestion.title.trim(),
+          text: newQuestion.text.trim(),
+          type: "TEXT",
+        }),
+      });
+
+      if (response.ok) {
+        const { data } = await response.json();
+        setQuestions(prev => [...prev, data]);
+        setNewQuestion({ title: "", text: "" });
+        toast.success("Question added successfully!");
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || "Failed to add question");
+      }
+    } catch (error) {
+      console.error("Error adding question:", error);
+      toast.error("Error adding question");
+    } finally {
+      setAddingQuestion(false);
+    }
   };
 
   if (loading) {
@@ -98,13 +186,16 @@ export default function EditPositionPage() {
           </div>
         </div>
         <div className="flex items-center space-x-3">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => setShowPreview(true)}>
             <Eye className="w-4 h-4 mr-2" />
             Preview
           </Button>
           <Button variant="outline" size="sm" onClick={handleCopyShareLink}>
             <Copy className="w-4 h-4 mr-2" />
             Copy Share Link
+          </Button>
+          <Button onClick={handleSavePosition} disabled={saving} className="bg-black hover:bg-gray-800 text-white">
+            {saving ? "Saving..." : "Save Changes"}
           </Button>
         </div>
       </div>
@@ -118,28 +209,48 @@ export default function EditPositionPage() {
 
         <TabsContent value="edit" className="mt-6">
           <div className="space-y-6">
-            {/* Position Title Section */}
+            {/* Position Details Section */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg font-medium">Position Title</CardTitle>
+                <CardTitle className="text-lg font-medium">Position Details</CardTitle>
               </CardHeader>
-              <CardContent>
-                <Input value={positionTitle} onChange={e => setPositionTitle(e.target.value)} className="w-full" placeholder="Enter position title" />
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="position-title">Position Title</Label>
+                  <Input
+                    id="position-title"
+                    value={positionTitle}
+                    onChange={e => setPositionTitle(e.target.value)}
+                    className="w-full"
+                    placeholder="Enter position title"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="position-description">Position Description</Label>
+                  <Textarea
+                    id="position-description"
+                    value={positionDescription}
+                    onChange={e => setPositionDescription(e.target.value)}
+                    className="w-full"
+                    placeholder="Enter position description (optional)"
+                    rows={3}
+                  />
+                </div>
               </CardContent>
             </Card>
 
-            {/* Interview Section */}
+            {/* Questions Section */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg font-medium">Interview</CardTitle>
+                <CardTitle className="text-lg font-medium">Interview Questions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Introduction */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="font-medium">Introduction</h3>
-                    <Badge variant="destructive" className="bg-red-100 text-red-800">
-                      !
+                    <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                      Optional
                     </Badge>
                   </div>
                   <div className="flex items-start space-x-4">
@@ -148,61 +259,63 @@ export default function EditPositionPage() {
                       <AvatarFallback className="bg-gray-200">👩</AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
-                      <Label htmlFor="introduction">Introduction</Label>
-                      <Textarea id="introduction" className="mt-2" placeholder="Enter introduction text..." rows={3} />
+                      <Label htmlFor="introduction">Introduction Script</Label>
+                      <Textarea
+                        id="introduction"
+                        className="mt-2"
+                        placeholder="Enter introduction text..."
+                        rows={3}
+                        value={introText}
+                        onChange={e => setIntroText(e.target.value)}
+                      />
                     </div>
                   </div>
                 </div>
 
-                {/* Question 1 */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-medium">Question 1</h3>
-                    <div className="flex items-center space-x-2">
-                      <Button variant="ghost" size="sm">
-                        <Copy className="w-4 h-4" />
-                        Copy
-                      </Button>
-                      <Badge variant="destructive" className="bg-red-100 text-red-800">
-                        !
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-4">
-                    <Avatar className="w-16 h-20">
-                      <AvatarImage src="/placeholder-man.jpg" />
-                      <AvatarFallback className="bg-gray-200">👨</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 space-y-3">
-                      <div>
-                        <Label htmlFor="question1-title">Motivation</Label>
-                        <Input id="question1-title" className="mt-2" defaultValue="Motivation" />
-                      </div>
-                      <div>
-                        <Textarea
-                          className="mt-2"
-                          placeholder="It is very important to us that the person that fills this position is excited about working here. Why do you think ABC Company would be a good fit for you?"
-                          rows={4}
-                          defaultValue="It is very important to us that the person that fills this position is excited about working here. Why do you think ABC Company would be a good fit for you?"
-                        />
+                {/* Existing Questions */}
+                {questions.map((question, index) => (
+                  <div key={question.id} className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-medium">{question.title || `Question ${index + 1}`}</h3>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            navigator.clipboard.writeText(question.text);
+                            toast.success("Question copied to clipboard!");
+                          }}
+                        >
+                          <Copy className="w-4 h-4" />
+                          Copy
+                        </Button>
+                        <Badge variant="secondary" className="bg-green-100 text-green-800">
+                          ✓
+                        </Badge>
                       </div>
                     </div>
+                    <div className="flex items-start space-x-4">
+                      <Avatar className="w-16 h-20">
+                        <AvatarImage src="/placeholder-man.jpg" />
+                        <AvatarFallback className="bg-gray-200">👨</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 space-y-3">
+                        <div>
+                          <Label>Question Text</Label>
+                          <Textarea className="mt-2" value={question.text} readOnly rows={3} />
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ))}
 
-                {/* Question 2 */}
-                <div className="space-y-4">
+                {/* Add New Question Form */}
+                <div className="space-y-4 border-t pt-6">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-medium">Question 2</h3>
-                    <div className="flex items-center space-x-2">
-                      <Button variant="ghost" size="sm">
-                        <Copy className="w-4 h-4" />
-                        Copy
-                      </Button>
-                      <Badge variant="destructive" className="bg-red-100 text-red-800">
-                        !
-                      </Badge>
-                    </div>
+                    <h3 className="font-medium">Add New Question</h3>
+                    <Badge variant="outline" className="bg-blue-50 text-blue-800">
+                      New
+                    </Badge>
                   </div>
                   <div className="flex items-start space-x-4">
                     <div className="w-16 h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
@@ -210,23 +323,43 @@ export default function EditPositionPage() {
                     </div>
                     <div className="flex-1 space-y-3">
                       <div>
-                        <Label htmlFor="question2-title">Title</Label>
-                        <Input id="question2-title" className="mt-2" placeholder="Question title" />
+                        <Label htmlFor="question-title">Question Title</Label>
+                        <Input
+                          id="question-title"
+                          className="mt-2"
+                          placeholder="Enter question title"
+                          value={newQuestion.title}
+                          onChange={e => setNewQuestion(prev => ({ ...prev, title: e.target.value }))}
+                        />
                       </div>
                       <div>
-                        <Label htmlFor="question2-content">Full question</Label>
-                        <Textarea id="question2-content" className="mt-2" placeholder="Enter your question here..." rows={4} />
+                        <Label htmlFor="question-content">Full Question</Label>
+                        <Textarea
+                          id="question-content"
+                          className="mt-2"
+                          placeholder="Enter your question here..."
+                          rows={4}
+                          value={newQuestion.text}
+                          onChange={e => setNewQuestion(prev => ({ ...prev, text: e.target.value }))}
+                        />
                       </div>
+                      <Button
+                        onClick={handleAddQuestion}
+                        disabled={addingQuestion || !newQuestion.title.trim() || !newQuestion.text.trim()}
+                        className="bg-black hover:bg-gray-800 text-white"
+                      >
+                        {addingQuestion ? "Adding..." : "Add Question"}
+                      </Button>
                     </div>
                   </div>
                 </div>
 
                 {/* Farewell Message */}
-                <div className="space-y-4">
+                <div className="space-y-4 border-t pt-6">
                   <div className="flex items-center justify-between">
                     <h3 className="font-medium">Farewell Message</h3>
-                    <Badge variant="destructive" className="bg-red-100 text-red-800">
-                      !
+                    <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                      Optional
                     </Badge>
                   </div>
                   <div className="flex items-start space-x-4">
@@ -235,31 +368,20 @@ export default function EditPositionPage() {
                       <AvatarFallback className="bg-gray-200">👩</AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
-                      <Label htmlFor="farewell">Farewell message script</Label>
-                      <Textarea id="farewell" className="mt-2" placeholder="Enter farewell message..." rows={3} />
+                      <Label htmlFor="farewell">Farewell Message Script</Label>
+                      <Textarea
+                        id="farewell"
+                        className="mt-2"
+                        placeholder="Enter farewell message..."
+                        rows={3}
+                        value={farewellText}
+                        onChange={e => setFarewellText(e.target.value)}
+                      />
                     </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
-
-            {/* Action Buttons */}
-            <div className="flex justify-between items-center">
-              <div className="flex space-x-3">
-                <Button variant="outline">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Question
-                </Button>
-                <Button variant="outline">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Introduction
-                </Button>
-                <Button variant="outline">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Farewell Message
-                </Button>
-              </div>
-            </div>
           </div>
         </TabsContent>
 
@@ -267,6 +389,109 @@ export default function EditPositionPage() {
           <PositionAnalytics positionId={params.id as string} />
         </TabsContent>
       </Tabs>
+
+      {/* Preview Dialog */}
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold">Interview Preview - {position.title}</DialogTitle>
+            <DialogDescription>This is how candidates will experience the interview process</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
+            {/* Interview Introduction */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-4 p-4 bg-blue-50 rounded-lg">
+                <Avatar className="w-16 h-16">
+                  <AvatarImage src="/placeholder-woman.jpg" />
+                  <AvatarFallback className="bg-blue-500 text-white">AI</AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <h3 className="font-medium text-gray-900">Welcome to your interview!</h3>
+                  <p className="text-gray-600 mt-1">
+                    Hi! I&apos;m your AI interviewer. I&apos;ll be asking you a few questions about the {position.title}{" "}
+                    position. Please take your time to answer each question thoughtfully.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Questions Preview */}
+            {questions.length > 0 ? (
+              <div className="space-y-6">
+                <h3 className="text-lg font-medium text-gray-900">Interview Questions ({questions.length})</h3>
+                {questions.map((question, index) => (
+                  <div key={question.id} className="space-y-4">
+                    <div className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg">
+                      <Avatar className="w-12 h-12">
+                        <AvatarImage src="/placeholder-man.jpg" />
+                        <AvatarFallback className="bg-gray-500 text-white">AI</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                            {index + 1}
+                          </span>
+                          <span className="text-sm font-medium text-gray-900">Question {index + 1}</span>
+                        </div>
+                        <p className="text-gray-800">{question.text}</p>
+                      </div>
+                    </div>
+
+                    {/* Mock Answer Area */}
+                    <div className="ml-16 p-4 border-2 border-dashed border-gray-200 rounded-lg">
+                      <p className="text-sm text-gray-500 mb-2">Candidate&apos;s answer will appear here:</p>
+                      <div className="bg-white border rounded-lg p-3 min-h-[100px] flex flex-col justify-center">
+                        <div className="space-y-2 text-gray-400">
+                          <div className="text-sm">[Text response area]</div>
+                          <div className="text-xs">Candidates can type their response or record video/audio</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 bg-gray-50 rounded-lg">
+                <div className="mx-auto w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                  <Plus className="h-6 w-6 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No questions added yet</h3>
+                <p className="text-gray-600">Add some interview questions to see the preview</p>
+              </div>
+            )}
+
+            {/* Interview Completion */}
+            <div className="space-y-4 border-t pt-6">
+              <div className="flex items-center space-x-4 p-4 bg-green-50 rounded-lg">
+                <Avatar className="w-16 h-16">
+                  <AvatarImage src="/placeholder-woman.jpg" />
+                  <AvatarFallback className="bg-green-500 text-white">AI</AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <h3 className="font-medium text-gray-900">Thank you for completing the interview!</h3>
+                  <p className="text-gray-600 mt-1">
+                    Your responses have been recorded and will be reviewed by our team. We&apos;ll get back to you
+                    within 2-3 business days with the next steps.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-between items-center pt-4 border-t">
+            <div className="text-sm text-gray-500">
+              Share link:{" "}
+              <code className="bg-gray-100 px-2 py-1 rounded text-xs">
+                {window.location.origin}/public/{position.id}
+              </code>
+            </div>
+            <Button onClick={() => setShowPreview(false)} className="bg-black hover:bg-gray-800 text-white">
+              Close Preview
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

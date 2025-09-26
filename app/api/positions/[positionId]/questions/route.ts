@@ -27,9 +27,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     // Parse request body
     const body = await request.json();
-    const { text, type = "TEXT", options } = body;
+    const { title, text, type = "TEXT", options } = body;
 
     // Validation
+    if (!title || typeof title !== "string" || title.trim().length === 0) {
+      return NextResponse.json({ error: "Question title is required." }, { status: 400 });
+    }
+
     if (!text || typeof text !== "string" || text.trim().length === 0) {
       return NextResponse.json({ error: "Question text is required." }, { status: 400 });
     }
@@ -61,6 +65,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const question = await prisma.question.create({
       data: {
         positionId,
+        title: title.trim(),
         text: text.trim(),
         type: type as QuestionType,
         options: type === "MULTIPLE_CHOICE" ? JSON.stringify(options) : null,

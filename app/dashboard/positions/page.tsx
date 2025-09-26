@@ -9,6 +9,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export default function PositionsPage() {
   const [positions, setPositions] = useState<Position[]>([]);
@@ -65,7 +66,15 @@ export default function PositionsPage() {
 
   // Generate avatar color based on position title
   const getAvatarColor = (title: string) => {
-    const colors = ["bg-blue-500", "bg-green-500", "bg-purple-500", "bg-pink-500", "bg-indigo-500", "bg-yellow-500", "bg-red-500"];
+    const colors = [
+      "bg-blue-500",
+      "bg-green-500",
+      "bg-purple-500",
+      "bg-pink-500",
+      "bg-indigo-500",
+      "bg-yellow-500",
+      "bg-red-500",
+    ];
     const index = title.length % colors.length;
     return colors[index];
   };
@@ -118,7 +127,9 @@ export default function PositionsPage() {
             <Plus className="h-6 w-6 text-gray-400" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">No positions created yet</h3>
-          <p className="text-gray-600 mb-6 max-w-md mx-auto">Create your first job position to start receiving applications from candidates.</p>
+          <p className="text-gray-600 mb-6 max-w-md mx-auto">
+            Create your first job position to start receiving applications from candidates.
+          </p>
           <Button asChild>
             <Link href="/dashboard/positions/new">
               <Plus className="mr-2 h-4 w-4" />
@@ -148,11 +159,15 @@ export default function PositionsPage() {
                   <TableCell>
                     <div className="flex items-center space-x-3">
                       <Avatar className={`h-10 w-10 ${getAvatarColor(position.title)}`}>
-                        <AvatarFallback className="text-white font-semibold">{position.title.substring(0, 2).toUpperCase()}</AvatarFallback>
+                        <AvatarFallback className="text-white font-semibold">
+                          {position.title.substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
                       </Avatar>
                       <div>
                         <div className="font-medium text-gray-900">{position.title}</div>
-                        <p className="text-sm text-gray-500 mt-1 line-clamp-1">{position.description || "No description"}</p>
+                        <p className="text-sm text-gray-500 mt-1 line-clamp-1">
+                          {position.description || "No description"}
+                        </p>
                       </div>
                     </div>
                   </TableCell>
@@ -179,7 +194,14 @@ export default function PositionsPage() {
                       onClick={e => {
                         e.stopPropagation(); // Prevent row click
                         const shareUrl = `${window.location.origin}/public/${position.id}`;
-                        navigator.clipboard.writeText(shareUrl);
+                        navigator.clipboard
+                          .writeText(shareUrl)
+                          .then(() => {
+                            toast.success("Share link copied to clipboard!");
+                          })
+                          .catch(() => {
+                            toast.error("Failed to copy link to clipboard");
+                          });
                       }}
                     >
                       <LinkIcon className="h-4 w-4 mr-1" />
