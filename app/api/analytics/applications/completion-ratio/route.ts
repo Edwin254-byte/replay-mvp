@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
         title: true,
         applications: {
           select: {
-            status: true,
+            completedAt: true,
           },
         },
       },
@@ -29,8 +29,8 @@ export async function GET(request: NextRequest) {
     // Calculate ratios for each position
     const completionRatios = positions.map(position => {
       const totalApplications = position.applications.length;
-      const completedApplications = position.applications.filter(app => app.status === "completed").length;
-      const inProgressApplications = position.applications.filter(app => app.status === "in_progress").length;
+      const completedApplications = position.applications.filter(app => app.completedAt !== null).length;
+      const inProgressApplications = position.applications.filter(app => app.completedAt === null).length;
 
       const completionRatio =
         totalApplications > 0 ? Math.round((completedApplications / totalApplications) * 100) / 100 : 0;

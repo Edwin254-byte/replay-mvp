@@ -10,33 +10,33 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized. Manager access required." }, { status: 401 });
     }
 
-    // Get status summary for applications belonging to manager's positions
-    const statusSummary = await prisma.application.groupBy({
-      by: ["status"],
+    // Get applications belonging to manager's positions
+    const applications = await prisma.application.findMany({
       where: {
         position: {
           userId: token.sub as string,
         },
       },
-      _count: {
+      select: {
         id: true,
+        completedAt: true,
+        status: true,
       },
     });
 
-    // Transform data into predictable shape
+    // Calculate summary based on completedAt field (more reliable than status)
     const summary = {
       in_progress: 0,
       completed: 0,
-      total: 0,
+      total: applications.length,
     };
 
-    statusSummary.forEach(item => {
-      if (item.status === "in_progress") {
-        summary.in_progress = item._count.id;
-      } else if (item.status === "completed") {
-        summary.completed = item._count.id;
+    applications.forEach(app => {
+      if (app.completedAt) {
+        summary.completed++;
+      } else {
+        summary.in_progress++;
       }
-      summary.total += item._count.id;
     });
 
     return NextResponse.json({

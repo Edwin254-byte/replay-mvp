@@ -13,7 +13,6 @@ export async function GET(request: NextRequest) {
     // Get completed applications with completion times
     const completedApplications = await prisma.application.findMany({
       where: {
-        status: "completed",
         completedAt: {
           not: null,
         },
