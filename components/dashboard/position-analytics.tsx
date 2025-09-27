@@ -30,6 +30,8 @@ import {
   Search,
   Loader2,
   X,
+  Check,
+  XIcon,
 } from "lucide-react";
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
@@ -124,6 +126,9 @@ export default function PositionAnalytics({ positionId }: PositionAnalyticsProps
   const [modalLoading, setModalLoading] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
 
+  // Status update state
+  const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
+
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
@@ -195,6 +200,53 @@ export default function PositionAnalytics({ positionId }: PositionAnalyticsProps
     setApplicationDetails(null);
     setModalError(null);
   }, []);
+
+  // Handle status update
+  const handleStatusUpdate = useCallback(
+    async (applicationId: string, status: "PASSED" | "FAILED") => {
+      try {
+        setUpdatingStatus(applicationId);
+
+        const response = await fetch(`/api/applications/${applicationId}/status`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to update status");
+        }
+
+        if (data.success) {
+          // Update the local applications data
+          setApplications(prev => prev.map(app => (app.id === applicationId ? { ...app, status: status } : app)));
+
+          // Refetch analytics to update the summary cards
+          const analyticsResponse = await fetch(`/api/positions/${positionId}/analytics`);
+          if (analyticsResponse.ok) {
+            const analyticsData = await analyticsResponse.json();
+            if (analyticsData.success) {
+              setAnalytics(analyticsData.data.analytics);
+            }
+          }
+
+          toast.success(`Application marked as ${status.toLowerCase()}`);
+        } else {
+          throw new Error(data.error || "Failed to update status");
+        }
+      } catch (error) {
+        console.error("Error updating status:", error);
+        toast.error(error instanceof Error ? error.message : "Failed to update status");
+      } finally {
+        setUpdatingStatus(null);
+      }
+    },
+    [positionId]
+  );
 
   const columns: ColumnDef<ApplicationData>[] = useMemo(
     () => [
@@ -297,8 +349,51 @@ export default function PositionAnalytics({ positionId }: PositionAnalyticsProps
         ),
         enableSorting: false,
       },
+      {
+        id: "actions",
+        header: "Actions",
+        cell: ({ row }) => {
+          const applicationId = row.original.id;
+          const status = row.getValue("status") as string;
+          const isUpdating = updatingStatus === applicationId;
+
+          if (status === "PENDING") {
+            return (
+              <div className="flex gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-8 p-0 text-green-600 border-green-200 hover:bg-green-50"
+                  onClick={() => handleStatusUpdate(applicationId, "PASSED")}
+                  disabled={isUpdating}
+                  title="Mark as Passed"
+                >
+                  {isUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-8 p-0 text-red-600 border-red-200 hover:bg-red-50"
+                  onClick={() => handleStatusUpdate(applicationId, "FAILED")}
+                  disabled={isUpdating}
+                  title="Mark as Failed"
+                >
+                  {isUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : <XIcon className="h-3 w-3" />}
+                </Button>
+              </div>
+            );
+          } else {
+            return (
+              <Badge variant={getStatusBadgeVariant(status)} className="text-xs">
+                {status === "PASSED" ? "Passed" : "Failed"}
+              </Badge>
+            );
+          }
+        },
+        enableSorting: false,
+      },
     ],
-    [handleViewApplication]
+    [handleViewApplication, handleStatusUpdate, updatingStatus]
   );
 
   const table = useReactTable({
@@ -552,9 +647,49 @@ export default function PositionAnalytics({ positionId }: PositionAnalyticsProps
                     </div>
                     <div>
                       <label className="text-sm font-medium text-slate-600">Status</label>
-                      <Badge variant={getStatusBadgeVariant(applicationDetails.status)} className="text-xs">
-                        {applicationDetails.status}
-                      </Badge>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant={getStatusBadgeVariant(applicationDetails.status)} className="text-xs">
+                          {applicationDetails.status}
+                        </Badge>
+                        {applicationDetails.status === "PENDING" && (
+                          <div className="flex gap-1">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 px-3 text-green-600 border-green-200 hover:bg-green-50"
+                              onClick={() => {
+                                handleStatusUpdate(applicationDetails.id, "PASSED");
+                                setApplicationDetails(prev => (prev ? { ...prev, status: "PASSED" } : null));
+                              }}
+                              disabled={updatingStatus === applicationDetails.id}
+                            >
+                              {updatingStatus === applicationDetails.id ? (
+                                <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                              ) : (
+                                <Check className="h-3 w-3 mr-1" />
+                              )}
+                              Pass
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 px-3 text-red-600 border-red-200 hover:bg-red-50"
+                              onClick={() => {
+                                handleStatusUpdate(applicationDetails.id, "FAILED");
+                                setApplicationDetails(prev => (prev ? { ...prev, status: "FAILED" } : null));
+                              }}
+                              disabled={updatingStatus === applicationDetails.id}
+                            >
+                              {updatingStatus === applicationDetails.id ? (
+                                <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                              ) : (
+                                <XIcon className="h-3 w-3 mr-1" />
+                              )}
+                              Fail
+                            </Button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="mt-4">
