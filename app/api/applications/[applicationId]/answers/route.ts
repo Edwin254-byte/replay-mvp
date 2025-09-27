@@ -4,15 +4,9 @@ import { getToken } from "next-auth/jwt";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ applicationId: string }> }) {
   try {
-    // Check authentication
-    const token = await getToken({ req: request });
-    if (!token) {
-      return NextResponse.json({ error: "Authentication required." }, { status: 401 });
-    }
-
     const { applicationId } = await params;
 
-    // Find the application and verify access
+    // Find the application first
     const application = await prisma.application.findUnique({
       where: { id: applicationId },
       include: {
@@ -29,13 +23,20 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: "Application not found." }, { status: 404 });
     }
 
-    // Verify applicant owns this application
-    if (token.role === "APPLICANT" && application.email !== token.email) {
-      return NextResponse.json(
-        { error: "Access denied. You can only answer questions for your own applications." },
-        { status: 403 }
-      );
+    // Check authentication only for logged-in users
+    const token = await getToken({ req: request });
+
+    // If user is authenticated, verify they have access
+    if (token) {
+      if (token.role === "APPLICANT" && application.email !== token.email) {
+        return NextResponse.json(
+          { error: "Access denied. You can only answer questions for your own applications." },
+          { status: 403 }
+        );
+      }
+      // Managers and admins can access any application
     }
+    // If not authenticated, allow access for public interviews (no token required)
 
     // Check if application is still in progress
     if (application.status !== "in_progress") {
@@ -144,15 +145,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ applicationId: string }> }) {
   try {
-    // Check authentication
-    const token = await getToken({ req: request });
-    if (!token) {
-      return NextResponse.json({ error: "Authentication required." }, { status: 401 });
-    }
-
     const { applicationId } = await params;
 
-    // Find the application and verify access
+    // Find the application first
     const application = await prisma.application.findUnique({
       where: { id: applicationId },
       include: {
@@ -170,16 +165,22 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Application not found." }, { status: 404 });
     }
 
-    // Verify access based on role
-    if (token.role === "APPLICANT") {
-      if (application.email !== token.email) {
-        return NextResponse.json({ error: "Access denied. You can only view your own answers." }, { status: 403 });
-      }
-    } else if (token.role === "MANAGER") {
-      if (application.position.userId !== token.sub) {
-        return NextResponse.json({ error: "Access denied to this application's answers." }, { status: 403 });
+    // Check authentication only for logged-in users
+    const token = await getToken({ req: request });
+
+    // If user is authenticated, verify they have access
+    if (token) {
+      if (token.role === "APPLICANT") {
+        if (application.email !== token.email) {
+          return NextResponse.json({ error: "Access denied. You can only view your own answers." }, { status: 403 });
+        }
+      } else if (token.role === "MANAGER") {
+        if (application.position.userId !== token.sub) {
+          return NextResponse.json({ error: "Access denied to this application's answers." }, { status: 403 });
+        }
       }
     }
+    // If not authenticated, allow access for public interviews (no token required)
 
     // Get all answers for this application
     const answers = await prisma.answer.findMany({

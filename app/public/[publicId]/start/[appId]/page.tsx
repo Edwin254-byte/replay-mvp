@@ -178,7 +178,7 @@ export default function InterviewPage({ params }: { params: Promise<{ publicId: 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           questionId: currentQuestionId,
-          answer: currentAnswer,
+          response: currentAnswer,
         }),
       });
 
